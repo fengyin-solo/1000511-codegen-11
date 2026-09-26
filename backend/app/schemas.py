@@ -19,6 +19,9 @@ class ActionResult(BaseModel):
     ok: bool
     message: str
     entry: dict[str, Any] | None = None
+    # 复核类动作：字段级校验错误（前端据此标红重试）与动作前后统计快照
+    errors: dict[str, str] | None = None
+    stats: dict[str, Any] | None = None
 
 
 class EntryPayload(BaseModel):

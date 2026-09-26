@@ -8,6 +8,10 @@ from typing import Any
 
 from app.seed import SEED_ROWS
 
+# 带下划线前缀的表是业务模块的附属台账（如分路不良复核台账），
+# 不属于运营概览里独立的业务模块，统计时跳过。
+HIDDEN_PREFIX = "_"
+
 
 class Store:
     def __init__(self) -> None:
@@ -16,7 +20,7 @@ class Store:
         }
 
     def module_names(self) -> list[str]:
-        return sorted(self._tables)
+        return [name for name in sorted(self._tables) if not name.startswith(HIDDEN_PREFIX)]
 
     def rows(self, module: str) -> list[dict[str, Any]]:
         return self._tables.setdefault(module, [])

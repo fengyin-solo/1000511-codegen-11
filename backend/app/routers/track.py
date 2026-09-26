@@ -7,13 +7,27 @@ from fastapi import APIRouter, HTTPException, Query
 
 from app.schemas import ActionResult, EntryPayload, PageResult
 from app.services.track import TrackService
+from app.services.track_review import TrackReviewService
 
 router = APIRouter(prefix="/api/track", tags=["轨道电路"])
 
 service = TrackService()
+review_service = TrackReviewService()
 
-LIST_FIELDS = ["设备编号", "制式类型", "区段长度", "分路灵敏度", "所属区段", "上次测试日", "下次测试日", "设备状态"]
+LIST_FIELDS = ["设备编号", "制式类型", "区段长度", "分路灵敏度", "残压限值", "所属区段", "上次测试日", "下次测试日", "复测结论", "复核测试日", "设备状态"]
 STATUSES = ["待测试", "运用正常", "分路不良", "已更换"]
+
+
+@router.get("/stats")
+def track_stats() -> dict[str, object]:
+    """轨道电路卡片统计：分路不良/待复核/待补录与复核概览同源，保证入口间对得上。"""
+    tracks, _ = service.list_entries(page=1, size=10000)
+    review_stats = review_service.stats()
+    return {
+        "在运轨道电路": len([row for row in tracks if row.get("status") != "已更换"]),
+        "待测试设备": len([row for row in tracks if row.get("status") == "待测试"]),
+        **review_stats,
+    }
 
 
 @router.get("", response_model=PageResult[dict])
@@ -28,6 +42,13 @@ def list_entries(
         raise HTTPException(status_code=400, detail="每页最多 200 条，请缩小分页范围")
     items, total = service.list_entries(keyword=keyword, status=status, page=page, size=size)
     return PageResult(items=items, total=total, page=page, size=size)
+
+
+@router.get("/export")
+def export_entries() -> dict[str, Any]:
+    """导出轨道电路清单：返回当前过滤条件下的全量数据。"""
+    items, total = service.list_entries(page=1, size=10000)
+    return {"module": "track", "total": total, "items": items}
 
 
 @router.get("/{entry_id}", response_model=dict)
@@ -56,10 +77,3 @@ def run_action(entry_id: int, payload: EntryPayload) -> ActionResult:
     if entry is None:
         return ActionResult(ok=False, message=message)
     return ActionResult(ok=True, message=message, entry=entry)
-
-
-@router.get("/export")
-def export_entries() -> dict[str, Any]:
-    """导出轨道电路清单：返回当前过滤条件下的全量数据。"""
-    items, total = service.list_entries(page=1, size=10000)
-    return {"module": "track", "total": total, "items": items}

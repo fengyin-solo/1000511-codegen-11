@@ -5,6 +5,7 @@ const Section = () => import('@/views/section/index.vue')
 const Signal = () => import('@/views/signal/index.vue')
 const Switch = () => import('@/views/switch/index.vue')
 const Track = () => import('@/views/track/index.vue')
+const TrackReview = () => import('@/views/track-review/index.vue')
 const Interlock = () => import('@/views/interlock/index.vue')
 const Atp = () => import('@/views/atp/index.vue')
 const Plan = () => import('@/views/plan/index.vue')
@@ -28,6 +29,7 @@ const router = createRouter({
     { path: '/signal', name: 'signal', component: Signal },
     { path: '/switch', name: 'switch', component: Switch },
     { path: '/track', name: 'track', component: Track },
+    { path: '/track-review', name: 'track-review', component: TrackReview },
     { path: '/interlock', name: 'interlock', component: Interlock },
     { path: '/atp', name: 'atp', component: Atp },
     { path: '/plan', name: 'plan', component: Plan },
