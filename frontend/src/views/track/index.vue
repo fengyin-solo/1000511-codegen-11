@@ -8,6 +8,7 @@
       <div class="page-actions">
         <button class="btn primary" type="button" @click="openCreate">登记轨道电路</button>
         <button class="btn" type="button" @click="exportRows">导出轨道电路清单</button>
+        <RouterLink class="btn" to="/track-review">分路不良复核</RouterLink>
       </div>
     </header>
 
@@ -73,7 +74,7 @@ const ENDPOINT = '/api/track'
 const columns = ["设备编号", "制式类型", "区段长度", "分路灵敏度", "所属区段", "上次测试日", "下次测试日", "设备状态"]
 const actions = ["提交测试", "确认正常", "更换设备"]
 const statuses = ["待测试", "运用正常", "分路不良", "已更换"]
-const stats = [{"label": "在运轨道电路", "value": 0}, {"label": "分路不良区段", "value": 0}, {"label": "待测试设备", "value": 0}]
+const stats = ref([{"label": "在运轨道电路", "value": 0}, {"label": "分路不良区段", "value": 0}, {"label": "待测试设备", "value": 0}])
 
 const rows = ref<Row[]>([])
 const total = ref(0)
@@ -94,6 +95,17 @@ function openCreate() {
   errorMessage.value = '轨道电路登记入口尚未接入审批流'
 }
 
+async function loadStats() {
+  try {
+    const response = await request(`${ENDPOINT}/stats`)
+    if (!response.ok) return
+    const payload = await response.json()
+    stats.value = stats.value.map((item) => ({ ...item, value: payload[item.label] ?? item.value }))
+  } catch {
+    // 统计读不出来时保留 0，不影响列表使用
+  }
+}
+
 async function runAction(action: string, row: Row) {
   errorMessage.value = ''
   try {
@@ -105,6 +117,7 @@ async function runAction(action: string, row: Row) {
       throw new Error('轨道电路动作未生效，请稍后重试')
     }
     await reload()
+    await loadStats()
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '轨道电路操作失败'
   }
@@ -121,6 +134,7 @@ async function reload() {
     const payload = await response.json()
     rows.value = payload.items ?? []
     total.value = payload.total ?? rows.value.length
+    await loadStats()
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '轨道电路列表读取失败'
   }

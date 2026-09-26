@@ -46,6 +46,15 @@ class TrackService:
         rows.append(entry)
         return entry, []
 
+    def stats(self) -> dict[str, int]:
+        """轨道电路列表页统计，口径与分路不良复核台账保持一致。"""
+        rows = store.rows(MODULE)
+        return {
+            "在运轨道电路": sum(1 for row in rows if row.get("status") != "已更换"),
+            "分路不良区段": sum(1 for row in rows if row.get("status") == "分路不良"),
+            "待测试设备": sum(1 for row in rows if row.get("status") == "待测试"),
+        }
+
     def run_action(self, entry_id: int, action: str) -> tuple[dict[str, Any] | None, str]:
         entry = store.find(MODULE, entry_id)
         if entry is None:
@@ -56,6 +65,7 @@ class TrackService:
         if target not in STATUS_ORDER:
             return None, f"目标状态「{target}」不在允许的状态序列里"
         entry["status"] = target
-        entry["pending"] = target != STATUS_ORDER[-1]
-        entry["abnormal"] = action in NEGATIVE_ACTIONS
+        # 提交测试与更换设备保持原流转；分路不良计入异常与待办，复核概览从同一状态派生
+        entry["pending"] = target in ("待测试", "运用正常", "分路不良")
+        entry["abnormal"] = target == "分路不良"
         return entry, f"轨道电路已{action}"
